@@ -41,6 +41,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 
+
 // Rate Limiting (Prevents Brute-Force Attacks)
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -66,7 +67,14 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.engine("handlebars", engine({ defaultLayout: false }));
+=======
+app.engine("handlebars", engine({ defaultLayout: false,
+    runtimeOptions: {
+        allowProtoPropertiesByDefault: true,
+        allowProtoMethodsByDefault: true
+    }
+ }));
+
 app.set("view engine", "handlebars");
 app.set("views", "./views");
 
