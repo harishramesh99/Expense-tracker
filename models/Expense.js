@@ -7,6 +7,4 @@ const ExpenseSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now }
 });
 
-
-
 export default mongoose.model("Expense", ExpenseSchema);
