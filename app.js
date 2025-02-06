@@ -1,24 +1,30 @@
-const express = require("express");
-const dotenv = require("dotenv");
-const path = require("path");
+import express from "express";
+import dotenv from "dotenv";
+import { engine } from "express-handlebars";
+import path from "path";
+import { fileURLToPath } from 'url';
+import expense from "./routes/expenses.js";
+import connectDB from './config/db.js';
 
-// Load environment variables
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 dotenv.config();
 
-// Initialize Express
+connectDB();
+
 const app = express();
 
-// Set Handlebars as the view engine
-app.set("view engine", "hbs");
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-// Middleware to serve static files (CSS, JS)
+app.engine("handlebars", engine({ defaultLayout: false }));
+app.set("view engine", "handlebars");
+app.set("views", "./views");
+
 app.use(express.static(path.join(__dirname, "public")));
 
-// Test Route
-app.get("/", (req, res) => {
-    res.send("Expense Tracker is running...");
-});
+app.use(expense);
 
-// Start the Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
