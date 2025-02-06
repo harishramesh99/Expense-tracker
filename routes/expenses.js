@@ -1,5 +1,7 @@
-import express from "express";
-import Expense from "../models/Expense.js";
+
+
+import express from 'express';
+import Expense from '../models/Expense.js';
 
 const router = express.Router();
 
@@ -16,7 +18,9 @@ router.get("/summary", async (req, res) => {
 });
 
 
-router.post("/add", async (req, res) => {
+
+router.post("/add-expenses", async (req, res) => {
+
   const { description, amount, category } = req.body;
   await new Expense({ description, amount, category }).save();
   res.redirect("/expenses/dashboard");
