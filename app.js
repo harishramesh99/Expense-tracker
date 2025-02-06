@@ -5,6 +5,7 @@ import { engine } from "express-handlebars";
 import path from "path";
 import { fileURLToPath } from 'url';
 import expense from "./routes/expenses.js";
+import user from "./routes/users.js";
 import connectDB from './config/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,6 +27,7 @@ app.set("views", "./views");
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(expense);
+app.use(user);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
