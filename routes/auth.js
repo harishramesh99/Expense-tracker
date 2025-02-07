@@ -6,8 +6,11 @@ import speakeasy from "speakeasy";
 import QRCode from "qrcode";
 import rateLimit from "express-rate-limit";
 import { body, validationResult } from "express-validator";
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
+
+const JWT_SECRET = process.env.JWT_SECRET ; 
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -90,7 +93,6 @@ router.post(
 
             await user.save(); // Save the user to DB
             req.session.userId = user._id;
-            console.log("Session User ID Set:", req.session.userId);
             // Enable 2FA immediately after registration
             const secret = speakeasy.generateSecret({ length: 20 });
             user.twoFactorSecret = secret.base32;
@@ -131,9 +133,7 @@ router.get("/login", (req, res) => {
 
 // auth.js
 router.post("/login", authLimiter, (req, res, next) => {
-    console.log('Request body:', req.body);
     passport.authenticate("local", (err, user, info) => {
-        console.log("User:", user);
         if (err) return next(err);
         if (!user) {
             return res.render("login", { message: info.message });
@@ -141,6 +141,7 @@ router.post("/login", authLimiter, (req, res, next) => {
 
         // Check if 2FA is enabled for the user
         if (user.twoFactorEnabled) {
+
             // Save the user ID in session for 2FA verification
             req.session.userId = user._id;
             return res.render("verify-2fa", {
@@ -191,11 +192,52 @@ router.post("/enable-2fa", async (req, res) => {
 });
 
 
+// router.post("/verify-2fa", async (req, res) => {
+//     const { token } = req.body; // The OTP entered by the 
+   
+//     const userId = req.session.userId; // Retrieve user ID from session
+    
+
+//     if (!userId) {
+//         return res.status(400).render("register-success", { message: "User session expired. Please log in again." });
+//     }
+
+//     try {
+//         // Fetch the user from the database
+//         const user = await User.findById(userId);
+//         if (!user || !user.twoFactorSecret) {
+//             return res.status(400).render("verify-2fa", { message: "User not found or 2FA not set up." });
+//         }
+
+//         // Verify the OTP using speakeasy
+//         const verified = speakeasy.totp.verify({
+//             secret: user.twoFactorSecret, // The stored secret key
+//             encoding: "base32",
+//             token, // The OTP entered by the user
+//             window: 1, // Allows slight time drift
+//         });
+
+//         if (verified) {
+//             // Mark the user as authenticated for 2FA
+//             req.session.is2FAAuthenticated = true;
+
+//             // Redirect to dashboard or another secured page
+//             console.log("2FA Verified Successfully");
+        
+//             return res.redirect("/dashboard");
+//         } else {
+//             return res.render("verify-2fa", { message: "Invalid or expired OTP. Please try again." });
+//         }
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).render("register-success", { message: "Server error. Please try again later." });
+//     }
+// });
 router.post("/verify-2fa", async (req, res) => {
-    const { token } = req.body; // The OTP entered by the 
-    console.log("Received Token:", token);
+    const { token } = req.body; // The OTP entered by the user
+    
     const userId = req.session.userId; // Retrieve user ID from session
-    console.log("User ID:", userId);
+    const isPasswordReset = req.session.isPasswordReset || false; // Check if it's a password reset request
 
     if (!userId) {
         return res.status(400).render("register-success", { message: "User session expired. Please log in again." });
@@ -204,27 +246,30 @@ router.post("/verify-2fa", async (req, res) => {
     try {
         // Fetch the user from the database
         const user = await User.findById(userId);
-        console.log("User ko sedc:", user);
         if (!user || !user.twoFactorSecret) {
-            return res.status(400).render("register-success", { message: "User not found or 2FA not set up." });
+            return res.status(400).render("verify-2fa", { message: "User not found or 2FA not set up." });
         }
 
         // Verify the OTP using speakeasy
         const verified = speakeasy.totp.verify({
-            secret: user.twoFactorSecret, // The stored secret key
+            secret: user.twoFactorSecret,
             encoding: "base32",
-            token, // The OTP entered by the user
-            window: 1, // Allows slight time drift
+            token, 
+            window: 1,
         });
 
         if (verified) {
-            // Mark the user as authenticated for 2FA
-            req.session.is2FAAuthenticated = true;
+            req.session.is2FAAuthenticated = true; // Mark as authenticated
 
-            // Redirect to dashboard or another secured page
-            return res.redirect("/dashboard");
+            if (isPasswordReset) {
+                console.log("2FA Verified for Password Reset");
+                return res.redirect("/reset-password"); // Redirect to password reset page
+            }
+
+            console.log("2FA Verified for Login");
+            return res.redirect("/dashboard"); // Redirect to dashboard for normal login
         } else {
-            return res.render("register-success", { message: "Invalid or expired OTP. Please try again." });
+            return res.render("verify-2fa", { message: "Invalid or expired OTP. Please try again." });
         }
     } catch (error) {
         console.error(error);
@@ -232,6 +277,81 @@ router.post("/verify-2fa", async (req, res) => {
     }
 });
 
+router.get("/logout", (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error("Error destroying session:", err);
+            return res.status(500).send("Error logging out");
+        }
+        res.redirect("/login");
+    });
+});
+
+
+router.get("/forgot-password", (req, res) => {
+    res.render("forgot-password", { title: "Forgot Password" });
+});
+
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.render('forgot-password', { message: "User not found." });
+        }
+
+        // Store userId and flag for password reset in session
+        req.session.userId = user._id;
+        req.session.isPasswordReset = true;
+
+        res.render('verify-2fa', { message: "Enter the OTP sent to your Authenticator app." });
+
+    } catch (error) {
+        console.error("Error in forgot-password:", error);
+        res.status(500).render('forgot-password', { message: "Something went wrong." });
+    }
+});
+
+router.get('/reset-password', (req, res) => {
+    res.render('reset-password', { title: "Reset Password" });
+});
+
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { password, confirmPassword } = req.body;
+        const userId = req.session.userId;
+
+        if (!userId) {
+            return res.redirect('/forgot-password');
+        }
+
+        if (password !== confirmPassword) {
+            return res.render('reset-password', { message: "Passwords do not match." });
+        }
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.render('reset-password', { message: "User not found." });
+        }
+
+        // Hash and update password
+       
+        const hashedPassword = await bcrypt.hash(password, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        // Clear session data after reset
+        req.session.userId = null;
+        req.session.isPasswordReset = false;
+
+        res.redirect('/login');
+    } catch (error) {
+        console.error("Error in reset-password:", error);
+        res.status(500).render('reset-password', { message: "Something went wrong." });
+    }
+});
 
 
 

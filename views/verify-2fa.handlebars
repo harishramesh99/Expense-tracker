@@ -1,9 +1,13 @@
-<form action="/verify-2fa" method="POST">
-    <label for="token">Enter 2FA Code</label>
-    <input type="text" id="token" name="token" required placeholder="Enter OTP">
-    <button type="submit">Verify</button>
+<form action="/verify-2fa" method="POST" style="max-width: 300px; margin: 20px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); text-align: center; background-color: #f9f9f9;">
+    <label for="token" style="display: block; font-weight: bold; margin-bottom: 8px;">Enter 2FA Code</label>
+    <input type="text" id="token" name="token" required placeholder="Enter OTP" 
+        style="width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; text-align: center;">
+    <button type="submit" 
+        style="width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">
+        Verify
+    </button>
 </form>
 
 {{#if message}}
-    <p style="color: red;">{{message}}</p>
+    <p style="color: red; text-align: center; font-weight: bold; margin-top: 10px;">{{message}}</p>
 {{/if}}

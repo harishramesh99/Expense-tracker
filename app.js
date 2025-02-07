@@ -10,10 +10,12 @@ import auth from "./routes/auth.js";
 import connectDB from './config/db.js';
 import session from "express-session";
 import passport from "passport";
-import MongoStore from "connect-mongo";
+import MongoStore from "connect-mongo"; 
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import xssClean from "xss-clean";
+import Handlebars from 'handlebars'; 
+import helpers from './helpers/dataHelpers.js';
 import "./config/passport.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,6 +26,8 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+
 
 // Security Middleware
 app.use(
@@ -52,21 +56,16 @@ app.use(
             mongoUrl: process.env.MONGO_URI,
             collectionName: "sessions",
         }),
-        // cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 }, // 1 hour
-        cookie: {
-            secure: process.env.NODE_ENV === "production", // Secure in production only
-            httpOnly: true, // Prevents client-side JavaScript from accessing cookies
-            sameSite: "strict", // Prevents CSRF attacks
-            maxAge: 1000 * 60 * 60, // 1 hour
-        }
+        cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 }, // 1 hour
+       
     })
 );
 
-
-
-
-app.use(passport.session());
 app.use(passport.initialize());
+app.use(passport.session());
+
+
+
 
 
 
@@ -83,7 +82,9 @@ export const authLimiter = rateLimit({
 
 // Passport Middleware
 
-
+// Register Handlebars Helpers before setting the engine
+// Import Handlebars directly
+Handlebars.registerHelper(helpers); // Register your helpers here
 
 app.engine("handlebars", engine({ defaultLayout: false,
     runtimeOptions: {
