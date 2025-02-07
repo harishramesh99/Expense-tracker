@@ -30,10 +30,11 @@ app.use(
     helmet.contentSecurityPolicy({
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "http://localhost:5000"], // Allow scripts from localhost
-        styleSrc: ["'self'", "https://fonts.googleapis.com"], // Allow styles from self and Google Fonts
-        imgSrc: ["'self'", "data:", "https://example.com"], // Allow images from self and example.com
-        // Add other directives as needed
+        scriptSrc: ["'self'", "'unsafe-inline'", "http://localhost:5000"], // Allow inline scripts if necessary
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"], // Allow inline styles if needed
+        imgSrc: ["'self'", "data:", "https://example.com"], // Allow images
+        fontSrc: ["'self'", "https://fonts.gstatic.com"], // Allow Google Fonts
+        connectSrc: ["'self'", "ws://localhost:5000"],
       },
     })
   ); // Security headers
@@ -51,7 +52,13 @@ app.use(
             mongoUrl: process.env.MONGO_URI,
             collectionName: "sessions",
         }),
-        cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 }, // 1 hour
+        // cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 }, // 1 hour
+        cookie: {
+            secure: process.env.NODE_ENV === "production", // Secure in production only
+            httpOnly: true, // Prevents client-side JavaScript from accessing cookies
+            sameSite: "strict", // Prevents CSRF attacks
+            maxAge: 1000 * 60 * 60, // 1 hour
+        }
     })
 );
 
@@ -65,18 +72,17 @@ app.use(passport.initialize());
 
 
 // Rate Limiting (Prevents Brute-Force Attacks)
-const limiter = rateLimit({
+export const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests
+    max: 5, // Limit login attempts to prevent brute-force
+    message: "Too many login attempts, please try again later.",
 });
-app.use(limiter);
 
 // Session Management (Stores in MongoDB)
 
 
 // Passport Middleware
-app.use(passport.initialize());
-app.use(passport.session());
+
 
 
 app.engine("handlebars", engine({ defaultLayout: false,
