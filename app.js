@@ -14,6 +14,7 @@ import MongoStore from "connect-mongo";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import xssClean from "xss-clean";
+import "./config/passport.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,15 +42,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 
-
-// Rate Limiting (Prevents Brute-Force Attacks)
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests
-});
-app.use(limiter);
-
-// Session Management (Stores in MongoDB)
 app.use(
     session({
         secret: process.env.SESSION_SECRET,
@@ -63,11 +55,30 @@ app.use(
     })
 );
 
+
+
+
+app.use(passport.session());
+app.use(passport.initialize());
+
+
+
+
+// Rate Limiting (Prevents Brute-Force Attacks)
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests
+});
+app.use(limiter);
+
+// Session Management (Stores in MongoDB)
+
+
 // Passport Middleware
 app.use(passport.initialize());
 app.use(passport.session());
 
-=======
+
 app.engine("handlebars", engine({ defaultLayout: false,
     runtimeOptions: {
         allowProtoPropertiesByDefault: true,

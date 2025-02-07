@@ -13,6 +13,10 @@
         <div class="login-form">
             <h1>Welcome Back</h1>
             <p>Login to your account!</p>
+
+         {{#if message}}
+    <p>{{message}}</p>
+{{/if}}
             <form action="/login" method="POST">
 
                 
@@ -33,57 +37,7 @@
         </div>
         
     </div>
-    <script>
-        // Wait until the DOM is fully loaded
-document.addEventListener("DOMContentLoaded", () => {
-    const form = document.querySelector("form");
-    const email = document.getElementById("email");
-    const password = document.getElementById("password");
-    const errorMessage = document.createElement("p");
-    errorMessage.style.color = "red";
-    errorMessage.style.fontSize = "0.9em";
-    errorMessage.style.marginTop = "5px";
-    form.insertAdjacentElement("beforeend", errorMessage);
-
-    // Email validation function
-    function validateEmail() {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.value)) {
-            errorMessage.textContent = "Please enter a valid email address.";
-            return false;
-        } else {
-            errorMessage.textContent = "";
-            return true;
-        }
-    }
-
-    // Password validation function
-    function validatePassword() {
-        if (password.value.trim() === "") {
-            errorMessage.textContent = "Password cannot be empty.";
-            return false;
-        }
-        errorMessage.textContent = "";
-        return true;
-    }
-
-    // Add event listeners for real-time validation
-    email.addEventListener("input", validateEmail);
-    password.addEventListener("input", validatePassword);
-
-    // Prevent form submission if validation fails
-    form.addEventListener("submit", (event) => {
-        const isEmailValid = validateEmail();
-        const isPasswordValid = validatePassword();
-
-        if (!isEmailValid || !isPasswordValid) {
-            event.preventDefault();
-            alert("Please fix the errors before logging in.");
-        }
-    });
-});
-
-    </script>
+    <script src="http://localhost:5000/scripts/login.js"></script>
 
 </body>
 </html>
