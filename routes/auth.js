@@ -4,10 +4,16 @@ import bcrypt from "bcryptjs";
 import passport from "passport";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
+import rateLimit from "express-rate-limit";
 import { body, validationResult } from "express-validator";
 
 const router = express.Router();
 
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: "Too many login attempts, please try again later.",
+});
 
 router.get("/register", (req, res) => {
     res.render("register", { title: "Register" });
@@ -123,7 +129,7 @@ router.get("/login", (req, res) => {
 
 
 
-router.post("/login", (req, res, next) => {
+router.post("/login", authLimiter, (req, res, next) => {
     passport.authenticate("local", (err, user, info) => {
         console.log("User ho ki k jhop",user);
         if (err) return next(err);
