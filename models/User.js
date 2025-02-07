@@ -5,8 +5,8 @@ const UserSchema = new mongoose.Schema({
     fullname: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    // twoFactorSecret: { type: String },
-    // twoFactorEnabled: { type: Boolean, default: false },
+    twoFactorSecret: { type: String },
+    twoFactorEnabled: { type: Boolean, default: false },
 });
 
 // Hash password before saving
