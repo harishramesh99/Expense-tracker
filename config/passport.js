@@ -50,7 +50,6 @@ import User from "../models/User.js"; // Ensure the User model is correctly impo
 // Local Strategy for Authentication
 passport.use(
     new LocalStrategy({ usernameField: "email" }, async (email, password, done) => {
-        console.log(email,"yo chalyo ");
         try {
             const user = await User.findOne({ email });
             console.log(user,"va");
@@ -86,9 +85,17 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser(async (id, done) => {
     try {
         const user = await User.findById(id);
-        done(null, user);
+        console.log(user,"user");
+        // You may need to manually track the 2FA status in the session if you want to persist it
+        if (user) {
+            // Check the session or database for the 2FA status
+            // Assuming that you save is2FAAuthenticated in the session during 2FA verification
+            done(null, user);  // Pass the user to the session
+        } else {
+            done(new Error("User not found"), null);
+        }
     } catch (error) {
-        done(error);
+        done(error, null);
     }
 });
 
