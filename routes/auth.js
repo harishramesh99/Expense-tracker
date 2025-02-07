@@ -129,14 +129,26 @@ router.get("/login", (req, res) => {
 
 
 
+// auth.js
 router.post("/login", authLimiter, (req, res, next) => {
+    console.log('Request body:', req.body);
     passport.authenticate("local", (err, user, info) => {
-        console.log("User ho ki k jhop",user);
+        console.log("User:", user);
         if (err) return next(err);
         if (!user) {
-            return res.render("login", { message: info.message }); // Send message to login view
-           
+            return res.render("login", { message: info.message });
         }
+
+        // Check if 2FA is enabled for the user
+        if (user.twoFactorEnabled) {
+            // Save the user ID in session for 2FA verification
+            req.session.userId = user._id;
+            return res.render("verify-2fa", {
+                message: "Enter the code from your Authenticator app."
+            });
+        }
+
+        // If no 2FA, log the user in and redirect to dashboard
         req.logIn(user, (err) => {
             if (err) return next(err);
             return res.redirect("/dashboard");
@@ -146,23 +158,22 @@ router.post("/login", authLimiter, (req, res, next) => {
 
 
 
+
 router.get("/register-success", (req, res) => {
     if (!req.session.qrCode) {
-        return res.redirect("/register"); // If no QR code is available, redirect back to registration page
+        return res.redirect("/register"); 
     }
-
-    // Render the register-success page with the QR code from the session
     res.render("register-success", {
         message: "User registered successfully. Scan the QR code to enable 2FA.",
-        qr: req.session.qrCode, // Pass the QR code to the view
+        qr: req.session.qrCode, 
     });
 
-    // Optionally, you can clear the session data after rendering
+   
     delete req.session.qrCode;
 });
 
 
-// Enable 2FA for the User
+
 router.post("/enable-2fa", async (req, res) => {
     const user = await User.findById(req.user.id);
 
@@ -178,26 +189,6 @@ router.post("/enable-2fa", async (req, res) => {
         res.json({ message: "2FA enabled", qr: imageUrl });
     });
 });
-
-// Verify 2FA Code
-// router.post("/verify-2fa", async (req, res) => {
-//     const { token } = req.body;
-//     const user = await User.findById(req.user.id);
-
-//     // Verify the token using speakeasy
-//     const verified = speakeasy.totp.verify({
-//         secret: user.twoFactorSecret,
-//         encoding: "base32",
-//         token,
-//     });
-
-//     if (verified) {
-//         res.json({ message: "2FA verified" });
-//     } else {
-//         res.status(400).json({ message: "Invalid 2FA code" });
-//     }
-// });
-
 
 
 router.post("/verify-2fa", async (req, res) => {

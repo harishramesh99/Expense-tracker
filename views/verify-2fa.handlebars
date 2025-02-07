@@ -1,0 +1,9 @@
+<form action="/verify-2fa" method="POST">
+    <label for="token">Enter 2FA Code</label>
+    <input type="text" id="token" name="token" required placeholder="Enter OTP">
+    <button type="submit">Verify</button>
+</form>
+
+{{#if message}}
+    <p style="color: red;">{{message}}</p>
+{{/if}}
